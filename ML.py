@@ -27,11 +27,10 @@ stop_words = set(stopwords.words('english'))
 options = Options()
 options.add_argument('--headless')
 options.add_argument("--disable-notifications")
-
 #URL = 'https://www.amazon.com/VGCUB-Backpack-Approved-Waterproof-Business/dp/B0B6F558KR/ref=sr_1_5?crid=3AR4A95CR2KZG&keywords=backpack&qid=1697965747&sprefix=ba%2Caps%2C293&sr=8-5'
 rev = []
 pages = 0
-
+preprocess = ""
 #models related
 sentiment_classifier = pipeline("sentiment-analysis") #default
 text_classifier = pipeline("text-classification", model="LiYuan/amazon-review-sentiment-analysis") #amazon sentiment analysis
@@ -45,7 +44,7 @@ amz_dict = []
 roberta_dict = []
 
 def get_url_pages():
-    global pages
+    global pages, preprocess
     pagestop = 0
     url = input("Please Input a Amazon product URL: \n")
     while pagestop == 0:
@@ -54,6 +53,7 @@ def get_url_pages():
             print("Invalid input. Try again. \n")
         else:
             pagestop = 1
+    preprocess = input("Do you need preprocessing? (y/n) \n")
     return url
 
 def get_soup(url):
@@ -203,7 +203,8 @@ URL = get_url_pages()
 review_url = URL.replace("dp", "product-reviews") + "&pageNumber=1&sortBy=recent"
 Scraping()
 rev_clone = rev.copy()
-Cleaning()
+if preprocess.lower() == "y":
+    Cleaning()
 analysis(rev_clone)
 writetofile()
 print("Finished. Results have been output to file.")
