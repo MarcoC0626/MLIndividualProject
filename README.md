@@ -13,3 +13,5 @@ The results of the analysis will be downloaded to a excel file named "Analysis".
 4) Amazon model Plot
 5) Roberta Model Analysis
 6) Roberta model Plot
+
+(Two excel files in this directory are old version of the output. The new version can't be uploaded because of unsupported character encoding in some images.)
