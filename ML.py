@@ -16,6 +16,9 @@ import nltk
 import string
 import re
 import pandas as pd
+import matplotlib.pyplot as plt
+import openpyxl.drawing.image
+import openpyxl
 
 nltk.download('stopwords')
 nltk.download('punkt')
@@ -168,14 +171,20 @@ def writetofile():
     d_default = pd.DataFrame(default_dict)
     d_amz = pd.DataFrame(amz_dict)
     d_roberta = pd.DataFrame(roberta_dict)
-    with pd.ExcelWriter('Analysis.xlsx') as writer:
+    d_empty = pd.DataFrame([])
+    with (pd.ExcelWriter('Analysis.xlsx') as writer):
         d_default.to_excel(writer, sheet_name="Default Analysis", index=True, index_label="CustomerNo")
         sheet1 = writer.sheets["Default Analysis"]
         for cell, in sheet1[f'B2:B{len(d_default)+1}']:
             value = d_default["Analysis"].iloc[cell.row-2]
             cell.fill = PatternFill("solid", start_color=("5cb800" if value == "POSITIVE" else "ff2800"))
-        d_amz.to_excel(writer, sheet_name="Amazon S.A. Model", index=True, index_label="CustomerNo")
-        sheet2 = writer.sheets["Amazon S.A. Model"]
+        d_empty.to_excel(writer, sheet_name="Default Analysis Plot")
+        img = openpyxl.drawing.image.Image('default.png')
+        worksheet = writer.sheets["Default Analysis Plot"]
+        worksheet.add_image(img)
+
+        d_amz.to_excel(writer, sheet_name="Amazon S.A. Model Analysis", index=True, index_label="CustomerNo")
+        sheet2 = writer.sheets["Amazon S.A. Model Analysis"]
         for cell, in sheet2[f'B2:B{len(d_amz)+1}']:
             value = int(d_amz["Analysis"].iloc[cell.row-2].split(" ")[0])
             if value > 3:
@@ -185,8 +194,13 @@ def writetofile():
             else:
                 color = "ffff00"
             cell.fill = PatternFill("solid", start_color=color)
-        d_roberta.to_excel(writer, sheet_name="Roberta Model", index=True, index_label="CustomerNo")
-        sheet3 = writer.sheets["Roberta Model"]
+        d_empty.to_excel(writer, sheet_name="Amazon model Plot")
+        img = openpyxl.drawing.image.Image('amz.png')
+        worksheet = writer.sheets["Amazon model Plot"]
+        worksheet.add_image(img)
+
+        d_roberta.to_excel(writer, sheet_name="Roberta Model Analysis", index=True, index_label="CustomerNo")
+        sheet3 = writer.sheets["Roberta Model Analysis"]
         for cell, in sheet3[f'B2:B{len(d_roberta)+1}']:
             value = d_roberta["Analysis"].iloc[cell.row-2]
             if value == "POSITIVE":
@@ -196,7 +210,60 @@ def writetofile():
             else:
                 color = "ffff00"
             cell.fill = PatternFill("solid", start_color=color)
+        d_empty.to_excel(writer, sheet_name="Roberta model Plot")
+        img = openpyxl.drawing.image.Image('roberta.png')
+        worksheet = writer.sheets["Roberta model Plot"]
+        worksheet.add_image(img)
 
+def default_plot():
+    pos = 0
+    neg = 0
+    for i in range(len(default_dict)):
+        if default_dict[i]["Analysis"] == "POSITIVE":
+            pos += 1
+        else:
+            neg += 1
+    keys = ["Positive", "Negative"]
+    values = [pos, neg]
+    plt.bar(keys, values, width=0.5)
+    plt.xlabel("Analysis")
+    plt.ylabel("Number of reviews")
+    plt.title("Default Analysis")
+    plt.savefig("default.png")
+    plt.close()
+
+def amz_plot():
+    stars = [0]*6
+    for i in range(len(amz_dict)):
+        stars[int(amz_dict[i]["Analysis"].split(" ")[0])] += 1
+    keys = ["1 star", "2 stars", "3 stars", "4 stars", "5 stars"]
+    values = [stars[1], stars[2], stars[3], stars[4], stars[5]]
+    plt.bar(keys, values, width=0.5)
+    plt.xlabel("Analysis")
+    plt.ylabel("Number of reviews")
+    plt.title("Amazon model Analysis")
+    plt.savefig("amz.png")
+    plt.close()
+
+def roberta_plot():
+    pos = 0
+    neg = 0
+    neu = 0
+    for i in range(len(roberta_dict)):
+        if roberta_dict[i]["Analysis"] == "POSITIVE":
+            pos += 1
+        elif roberta_dict[i]["Analysis"] == "NEGATIVE":
+            neg += 1
+        else:
+            neu += 1
+    keys = ["Positive", "Neutral", "Negative"]
+    values = [pos, neu, neg]
+    plt.bar(keys, values, width=0.5)
+    plt.xlabel("Analysis")
+    plt.ylabel("Number of reviews")
+    plt.title("Roberta model Analysis")
+    plt.savefig("roberta.png")
+    plt.close()
 
 #Main Program Begins
 URL = get_url_pages()
@@ -205,6 +272,10 @@ Scraping()
 rev_clone = rev.copy()
 if preprocess.lower() == "y":
     Cleaning()
+
 analysis(rev_clone)
+default_plot()
+amz_plot()
+roberta_plot()
 writetofile()
 print("Finished. Results have been output to file.")
